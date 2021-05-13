@@ -1,14 +1,16 @@
 require('dotenv').config();
-const mongoose = require('mongoose');
-const bodyParser = require('body-parser');
-const express = require('express');
-const cors = require('cors');
-const shortid = require('shortid');
-const { urlencoded } = require('body-parser');
-const app = express();
+var mongo = require('mongodb');
+var mongoose = require('mongoose');
+var bodyParser = require('body-parser');
+var shortid = require('shortid');
+var express = require('express');
+var cors = require('cors');
+var app = express();
 
 // Basic Configuration
 const port = process.env.PORT || 3000;
+
+mongoose.connect(process.env.DB_URI,{ useNewUrlParser: true, useUnifiedTopology: true });
 
 app.use(cors());
 
@@ -18,23 +20,44 @@ app.get('/', function(req, res) {
   res.sendFile(process.cwd() + '/views/index.html');
 });
 //URL SHORTENING//
-var ShortUrl = mongoose.model('ShortUrl',new mongoose.Schema({"name": String}))
+var ShortUrl = mongoose.model('ShortUrl',new mongoose.Schema({
+  short_url : String,
+  original_url : String,
+  suffix : String
+}))
 
-app.use(bodyParser,urlencoded({extended:false}))
-app.use(bodyParser.json())
+app.use(express.urlencoded({extended:true}));
+app.use(express.json());
 
-app.post("/api/shorturl/new/",function(req,res){
-  let client_requested_url = req.body.url
-  let suffix = shortid.generate();
-
-  res.json({
-    "short_url":"",
-    "original_url":"",
-    "suffix":""
+let suffix = shortid.generate();
+app.post("/api/shorturl",function(req,res){
+  console.log("post req called");
+  console.log(req.body.url+"req body");
+  let newURL = new ShortUrl({
+    "short_url" : __dirname + "/api/shorturl/" + suffix,
+    "original_url" : req.body.url,
+    "suffix" : suffix
   })
-
+  newURL.save(function(err,doc){
+    if(err){
+      console.log(err);
+    }
+    res.json({
+      "short_url":newURL.short_url,
+      "original_url":newURL.original_url,
+      "suffix":newURL.suffix
+    });
+  });
 })
-
+app.get("/api/shorturl/:suffix",function(req,res){
+  let userGeneratedSuffix = req.params.suffix;
+  ShortUrl.find({suffix:userGeneratedSuffix}).then(function(foundUrl){
+    
+    let userRedirect = foundUrl[0];
+    // console.log(userRedirect);
+    res.redirect(userRedirect.original_url);
+  })
+})
 
 
 // Your first API endpoint
