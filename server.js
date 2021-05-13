@@ -63,23 +63,15 @@ app.post("/api/shorturl",function(req,res){
 })
 app.get("/api/shorturl/:suffix",function(req,res){
   let userGeneratedSuffix = req.params.suffix;
-  ShortUrl.findById({userGeneratedSuffix},(err,data)=>{
-    console.log(data.original_url);
-    if(!data){
-      res.json({
-        error : "Invalid URL"
-      })
-    }else{
-      res.redirect(data.original_url);
-    }
+  ShortUrl.find({suffix : userGeneratedSuffix}).then(function(foundUrl){
+
+        let userRedirect = foundUrl[0];
+    console.log(userRedirect.original_url);
+    res.redirect(userRedirect.original_url);
   })
 });
     
-//     let userRedirect = foundUrl[0];
-//     // console.log(userRedirect);
-//     res.redirect(userRedirect.original_url);
-//   })
-// })
+
 
 
 // Your first API endpoint
